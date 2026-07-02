@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFRI MentorLink - Recherche de mentors</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #1a365d;
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 30px;
+        }
+        .search-form {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4299e1;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .btn {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+        }
+        .btn:hover {
+            background: #2b6cb0;
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .loader {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .loader-spinner {
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #4299e1;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 25px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .results-count {
+            color: #4a5568;
+            font-weight: 600;
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+        }
+        .mentor-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: box-shadow 0.3s;
+            border-left: 5px solid #4299e1;
+        }
+        .mentor-card:hover {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .mentor-card .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .mentor-card .name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        .mentor-card .filiere {
+            color: #718096;
+            font-size: 0.95rem;
+        }
+        .mentor-card .score {
+            background: #48bb78;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .mentor-card .competences {
+            margin-top: 10px;
+        }
+        .mentor-card .competences span {
+            display: inline-block;
+            background: #ebf8ff;
+            color: #2b6cb0;
+            padding: 3px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            margin: 3px 5px 3px 0;
+        }
+        .mentor-card .commun {
+            background: #c6f6d5;
+            color: #22543d;
+            font-weight: 600;
+        }
+        .mentor-card .details {
+            margin-top: 10px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-size: 0.95rem;
+            color: #4a5568;
+        }
+        .mentor-card .details .label {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .error-msg {
+            background: #fed7d7;
+            color: #9b2c2c;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                padding: 15px;
+            }
+            .mentor-card .header {
+                flex-direction: column;
+            }
+            .mentor-card .score {
+                margin-top: 8px;
+            }
+        }
+         /* Photo de profil */
+        .photo-container {
+             flex-shrink: 0;
+        }
+
+        .photo-profil {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #4299e1;
+        }
+
+        .photo-default {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    color: #718096;
+    border: 2px solid #e2e8f0;
+        }   
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 IFRI MentorLink</h1>
+        <p class="subtitle">Trouvez un mentor compatible avec vos besoins</p>
+
+        <!-- Formulaire -->
+        <div class="search-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="competences">📚 Compétences recherchées *</label>
+                    <input type="text" id="competences" placeholder="Ex: Python, Algorithmique, Django" required>
+                    <small style="color:#718096;">Séparez par des virgules</small>
+                </div>
+                <div class="form-group">
+                    <label for="filiere">🎓 Filière (optionnel)</label>
+                    <input type="text" id="filiere" placeholder="Ex: Informatique, Mathématiques">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="heure">🕐 Disponibilité souhaitée (optionnel)</label>
+                <input type="text" id="heure" placeholder="Ex: Lundi 14h-16h">
+                <small style="color:#718096;">Format: Jour Hh-Mm (ex: Lundi 14h-16h)</small>
+            </div>
+            <button class="btn" id="btnRechercher">🔎 Rechercher un mentor</button>
+        </div>
+
+        <!-- Loader -->
+        <div class="loader" id="loader">
+            <div class="loader-spinner"></div>
+            <p style="margin-top: 10px; color: #4a5568;">Recherche en cours...</p>
+        </div>
+
+        <!-- Error -->
+        <div class="error-msg" id="errorMsg"></div>
+
+        <!-- Résultats -->
+        <div id="resultsContainer">
+            <div class="results-header">
+              <span class="results-count" id="resultsCount">0 mentor(s) trouvé(s)</span>
+            </div>
+            <div id="resultsList"></div>
+            <div class="error-msg" id="errorMsg"></div>
+            <div class="loader" id="loader"></div>
+            </div>
+        </div>
+<script>
+    const API_URL = '/api/rechercher/';
+
+    document.getElementById('btnRechercher').addEventListener('click', rechercher);
+    document.getElementById('competences').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') rechercher();
+    });
+
+    async function rechercher() {
+        const competences = document.getElementById('competences').value.trim();
+        const filiere = document.getElementById('filiere').value.trim();
+        const heure = document.getElementById('heure').value.trim();
+
+        if (!competences) {
+            afficherErreur('Veuillez saisir au moins une compétence');
+            return;
+        }
+
+        document.getElementById('btnRechercher').disabled = true;
+        document.getElementById('btnRechercher').textContent = '⏳ Recherche...';
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('errorMsg').style.display = 'none';
+        document.getElementById('resultsList').innerHTML = '';
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    competences: competences,
+                    filiere: filiere,
+                    heure: heure
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                afficherErreur(data.erreur || 'Erreur lors de la recherche');
+                return;
+            }
+
+            afficherResultats(data);
+
+        } catch (error) {
+            afficherErreur('Erreur de connexion au serveur');
+            console.error(error);
+        } finally {
+            document.getElementById('btnRechercher').disabled = false;
+            document.getElementById('btnRechercher').textContent = '🔎 Rechercher un mentor';
+            document.getElementById('loader').style.display = 'none';
+        }
+    }
+
+    function afficherErreur(message) {
+        const errorDiv = document.getElementById('errorMsg');
+        errorDiv.textContent = '⚠️ ' + message;
+        errorDiv.style.display = 'block';
+        document.getElementById('resultsCount').textContent = '0 mentor(s) trouvé(s)';
+        document.getElementById('resultsList').innerHTML = '';
+    }
+
+    function afficherResultats(data) {
+        const count = document.getElementById('resultsCount');
+        const list = document.getElementById('resultsList');
+
+        count.textContent = `${data.total} mentor(s) trouvé(s)`;
+
+        if (data.total === 0) {
+            list.innerHTML = `<div class="no-results">😔 Aucun mentor trouvé pour ces critères</div>`;
+            return;
+        }
+
+        list.innerHTML = '';
+        
+        data.resultats.forEach(mentor => {
+            const card = document.createElement('div');
+            card.className = 'mentor-card';
+            
+            // Compétences
+            const competencesHtml = mentor.competences_completes.map(c => `<span>${c}</span>`).join('');
+            const communesHtml = mentor.competences_communes.map(c => `<span class="commun">⭐ ${c}</span>`).join('');
+            const disponibilitesHtml = mentor.disponibilites.map(d => `<span>${d}</span>`).join('');
+            
+            // Photo
+            let photoHtml = '';
+            if (mentor.photo_profil) {
+                photoHtml = `<img src="${mentor.photo_profil}" alt="Photo" class="photo-profil">`;
+            } else {
+                photoHtml = `<div class="photo-default">👤</div>`;
+            }
+            
+            // Bio
+            let bioHtml = '';
+            if (mentor.bio) {
+                bioHtml = `<div style="margin-top:5px; color:#718096; font-size:0.9rem;">${mentor.bio}</div>`;
+            }
+            
+            // Téléphone
+            let phoneHtml = '';
+            if (mentor.telephone) {
+                phoneHtml = `<div><span class="label">📞 Contact :</span> ${mentor.telephone}</div>`;
+            }
+            
+            card.innerHTML = `
+                <div class="header">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div class="photo-container">${photoHtml}</div>
+                        <div>
+                            <div class="name">${mentor.nom}</div>
+                            <div class="filiere">${mentor.filiere || 'Filière non renseignée'}</div>
+                            ${bioHtml}
+                        </div>
+                    </div>
+                    <div class="score">${mentor.score}%</div>
+                </div>
+                <div class="competences">
+                    <strong>Compétences :</strong><br>
+                    ${competencesHtml}
+                </div>
+                <div class="competences" style="margin-top:5px;">
+                    <strong>⭐ Compétences en commun :</strong><br>
+                    ${communesHtml || 'Aucune'}
+                </div>
+                <div class="details">
+                    <div><span class="label">📅 Disponibilités :</span> ${disponibilitesHtml || 'Non renseignées'}</div>
+                    <div><span class="label">📋 Format :</span> ${mentor.format_mentorat}</div>
+                    ${phoneHtml}
+                </div>
+            `;
+            list.appendChild(card);
+        });
+    }
+</script>
+    
+</body>
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploader une photo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #1a365d;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 25px;
+        }
+        .mentor-name {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 20px;
+        }
+        .preview {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .preview img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #4299e1;
+        }
+        .preview .default-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: #718096;
+            margin: 0 auto;
+            border: 3px solid #e2e8f0;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        input[type="file"]:hover {
+            border-color: #4299e1;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn:hover { background: #2b6cb0; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        .success { background: #d4edda; color: #155724; display: block; }
+        .error { background: #f8d7da; color: #721c24; display: block; }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #4299e1;
+            text-decoration: none;
+        }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📸 Photo de profil</h1>
+        <p class="subtitle">Ajoutez ou modifiez votre photo</p>
+        
+        <div class="mentor-name">👤 {{ mentor.prenom }} {{ mentor.nom }}</div>
+        
+        <div class="preview">
+            {% if mentor.photo_profil %}
+                <img src="{{ mentor.photo_profil.url }}" alt="Photo de profil" id="previewImg">
+            {% else %}
+                <div class="default-avatar" id="previewAvatar">👤</div>
+            {% endif %}
+        </div>
+        
+        <form id="uploadForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="form-group">
+                <input type="file" name="photo" id="photoInput" accept="image/*" required>
+            </div>
+            <button type="submit" class="btn" id="uploadBtn">📤 Uploader</button>
+        </form>
+        
+        <div id="message" class="message"></div>
+        <a href="/" class="back-link">← Retour à la recherche</a>
+    </div>
+
+    <script>
+        const photoInput = document.getElementById('photoInput');
+        const previewImg = document.getElementById('previewImg');
+        const previewAvatar = document.getElementById('previewAvatar');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const message = document.getElementById('message');
+        
+        // Aperçu avant upload
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    if (previewImg) {
+                        previewImg.src = event.target.result;
+                    } else {
+                        // Créer l'élément img si pas présent
+                        const preview = document.querySelector('.preview');
+                        preview.innerHTML = <img src="${event.target.result}" alt="Aperçu" id="previewImg" style="width:150px;height:150px;border-radius:50%;object-fit:cover;border:3px solid #4299e1;">;
+                    }
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Upload
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const mentorId = {{ mentor.id }};
+            
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '⏳ Upload...';
+            message.style.display = 'none';
+            message.className = 'message';
+            
+            try {
+                const response = await fetch(/api/upload/${mentorId}/, {
+                    method : 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    message.textContent = '✅ ' + data.message;
+                    message.className = 'message success';
+                    message.style.display = 'block';
+                    
+                    // Mettre à jour l'aperçu
+                    if (data.photo_url) {
+                        const preview = document.querySelector('.preview');
+                        preview.innerHTML = <img src="${data.photo_url}?t=${Date.now()}" alt="Photo" style="width:150px;height:150px;border-radius:50%;object-fit:cover;border:3px solid #4299e1;">;
+                    }
+                } else {
+                    message.textContent = '❌ ' + data.erreur;
+                    message.className = 'message error';
+                    message.style.display = 'block';
+                }
+            } catch (error) {
+                message.textContent = '❌ Erreur de connexion au serveur';
+                message.className = 'message error';
+                message.style.display = 'block';
+            }
+            
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = '📤 Uploader';
+        });
+    </script>
+</body>
+</html>
