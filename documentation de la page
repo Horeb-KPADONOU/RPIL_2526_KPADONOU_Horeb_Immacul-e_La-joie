@@ -1,0 +1,30 @@
+ #🚀 IFRI MentorLink - API de Recherche de mentor
+
+---
+
+## 🎯 Endpoint principal
+
+| Méthode | URL | Description |
+|---------|-----|-------------|
+| POST | /api/rechercher/ | Recherche des mentors compatibles |
+
+---
+
+## 📥 Requête
+
+```json
+{
+  "competences": "Python, Django",   // ✅ Requis
+  "filiere": "Informatique",         // ⚠️ Optionnel
+  "heure": "Lundi 14h-16h"           // ⚠️ Optionnel
+}
+## Retourne des mentors avec toutes leurs informations en se basant sur l'algorithme de matching
+SCORE DE COMPATIBILITE 
+  ______________________________________________
+  |Critères               |    points           |   
+  | compétences communes  |    +30/compétences  | 
+  | horaires compatibles  |     +25             |
+  | Mème filière          |     +15             |
+  | Maximum               |     100%            |
+  _______________________________________________
+TECHNOLOGIES UTILISEES: base de données avec PostgreSQL, Framework python: django, Frontend: HTML, CSS, Java Script
